@@ -18,7 +18,7 @@ While modern neural networks have become more accurate, they are mostly poorly c
 
 <figure>
 <div style="text-align:center">
-<img src="/assets/img/calibration/average-conf.png" alt="reliability-diag" style="zoom: 50%;" /></div>
+<img src="calibration/average-conf.png" alt="reliability-diag" style="zoom: 50%;" /></div>
 <figcaption align="center">Figure 1. Confidence Histograms for a 5-layer LeNet (left) and a 110-layer ResNet (right) on CIFAR-100. </figcaption>
 </figure>
 
@@ -37,7 +37,7 @@ The following methods are used to visualize and quantify calibration.
 
 <figure>
 <div style="text-align:center">
-<img src="/assets/img/calibration/rel-diag.png" alt="reliability-diag" style="zoom: 50%;" /></div>
+<img src="calibration/rel-diag.png" alt="reliability-diag" style="zoom: 50%;" /></div>
 <figcaption align="center">Figure 2. Reliability diagrams (bottom) for a 5-layer LeNet (left) and a 110-layer ResNet (right) on CIFAR-100. </figcaption>
 </figure>
 
@@ -172,7 +172,7 @@ In the figure below, we can see that effect of calibration on the Validation Set
 - The post-calibration entropy lies **above** the pre-calibration entropy line indicating the effect of Temperature Scaling
 <figure>
 <div style="text-align:center">
-<img src="/assets/img/calibration/entropy.png" alt="entropy" style="zoom: 40%;"/></div>
+<img src="calibration/entropy.png" alt="entropy" style="zoom: 40%;"/></div>
 <figcaption align="center">Figure 3. Entropy and NLL for CIFAR-100 before and after calibration. The optimal T selected by temperature scaling rises throughout optimization, as the pre-calibration entropy decreases steadily. The post-calibration entropy and NLL on the validation set coincide (which can be derived from the gradient optimality condition of T ). </figcaption>
 </figure>
 
