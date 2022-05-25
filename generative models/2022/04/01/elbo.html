@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="twitter:card" content="summary_large_image" /><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Deriving ELBO in different ways | Blog</title>
+<meta name="generator" content="Jekyll v4.1.1" />
+<meta property="og:title" content="Deriving ELBO in different ways" />
+<meta property="og:locale" content="en_US" />
+<link rel="canonical" href="https://shenoynikhil.github.io/blog/generative%20models/2022/04/01/elbo.html" />
+<meta property="og:url" content="https://shenoynikhil.github.io/blog/generative%20models/2022/04/01/elbo.html" />
+<meta property="og:site_name" content="Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-04-01T00:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Deriving ELBO in different ways" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2022-04-01T00:00:00-05:00","datePublished":"2022-04-01T00:00:00-05:00","headline":"Deriving ELBO in different ways","mainEntityOfPage":{"@type":"WebPage","@id":"https://shenoynikhil.github.io/blog/generative%20models/2022/04/01/elbo.html"},"url":"https://shenoynikhil.github.io/blog/generative%20models/2022/04/01/elbo.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/blog/assets/css/style.css"><link type="application/atom+xml" rel="alternate" href="https://shenoynikhil.github.io/blog/feed.xml" title="Blog" /><link rel="shortcut icon" type="image/x-icon" href="/blog/images/favicon.ico"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Primer/15.2.0/primer.css" integrity="sha512-xTz2ys4coGAOz8vuV1NcQBkgVmKhsSEtjbqyMJbBHRplFuvKIUo6xhLHpAyPt9mfR6twHJgn9OgVLuqOvjeBhg==" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" integrity="sha512-1PKOgIY59xJ8Co8+NE6FZ+LOAZKjy+KY8iq0G4B3CyeY6wYHN3yt9PW0XpSriVlkMXe40PTKnXrLnZ9+fkDaog==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.css" integrity="sha512-h7nl+xz8wgDlNM4NqKEM4F1NkIRS17M9+uJwIGwuo8vGqIl4BhuCKdxjWEINm+xyrUjNCnK5dCrhM0sj+wTIXw==" crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/katex.min.js" integrity="sha512-/CMIhXiDA3m2c9kzRyd97MTb3MC6OVnx4TElQ7fkkoRghwDf6gi41gaT1PwF270W6+J60uTmwgeRpNpJdRV6sg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.12.0/contrib/auto-render.min.js" integrity="sha512-Do7uJAaHZm5OLrIv/yN4w0iG1dbu01kzdMNnFfu/mAqgUk6Nniv2JYHcwH+cNwjqgLcqcuBBk+JRvprLVI8azg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha512-0doc9hKxR3PYwso42RD1p5ySZpzzuDiOwMrdCEh2WdJZCjcmFKc/wEnL+z8fBQrnHoiNWbo+3fiGkOYXBdQp4A==" crossorigin="anonymous"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement( document.body, {
+        delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "[%", right: "%]", display: true},
+            {left: "$", right: "$", display: false}
+        ]}
+        );
+    });
+    </script>
+
+
+<script>
+function wrap_img(fn) {
+    if (document.attachEvent ? document.readyState === "complete" : document.readyState !== "loading") {
+        var elements = document.querySelectorAll(".post img");
+        Array.prototype.forEach.call(elements, function(el, i) {
+            if (el.getAttribute("title") && (el.className != "emoji")) {
+                const caption = document.createElement('figcaption');
+                var node = document.createTextNode(el.getAttribute("title"));
+                caption.appendChild(node);
+                const wrapper = document.createElement('figure');
+                wrapper.className = 'image';
+                el.parentNode.insertBefore(wrapper, el);
+                el.parentNode.removeChild(el);
+                wrapper.appendChild(el);
+                wrapper.appendChild(caption);
+            }
+        });
+    } else { document.addEventListener('DOMContentLoaded', fn); }
+}
+window.onload = wrap_img;
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+    // add link icon to anchor tags
+    var elem = document.querySelectorAll(".anchor-link")
+    elem.forEach(e => (e.innerHTML = '<i class="fas fa-link fa-xs"></i>'));
+    });
+</script>
+</head>
+<body><header class="site-header">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/blog/">Blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/blog/https:/shenoynikhil.github.io/">about</a><a class="page-link" href="/blog/search/">search</a><a class="page-link" href="/blog/categories/">tags</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Deriving ELBO in different ways</h1><p class="post-meta post-meta-title"><time class="dt-published" datetime="2022-04-01T00:00:00-05:00" itemprop="datePublished">
+        Apr 1, 2022
+      </time>
+       • <span class="read-time" title="Estimated read time">
+    
+    
+      9 min read
+    
+</span></p>
+
+    
+      <p class="category-tags"><i class="fas fa-tags category-tags-icon"></i></i> 
+      
+        <a class="category-tags-link" href="/blog/categories/#generative models">generative models</a>
+        
+      
+      </p>
+    
+
+    
+      
+        <div class="pb-5 d-flex flex-justify-center">
+          <div class="px-2">
+
+    <a href="https://github.com/shenoynikhil/blog/tree/master/_notebooks/2022-04-01-elbo.ipynb" role="button" target="_blank">
+<img class="notebook-badge-image" src="/blog/assets/badges/github.svg" alt="View On GitHub">
+    </a>
+</div>
+
+          
+          <div class="px-2">
+    <a href="https://colab.research.google.com/github/shenoynikhil/blog/blob/master/_notebooks/2022-04-01-elbo.ipynb" target="_blank">
+        <img class="notebook-badge-image" src="/blog/assets/badges/colab.svg" alt="Open In Colab"/>
+    </a>
+</div>
+          <div class="px-2">
+  <a href="https://deepnote.com/launch?url=https%3A%2F%2Fgithub.com%2Fshenoynikhil%2Fblog%2Fblob%2Fmaster%2F_notebooks%2F2022-04-01-elbo.ipynb" target="_blank">
+      <img class="notebook-badge-image" src="/blog/assets/badges/deepnote.svg" alt="Launch in Deepnote"/>
+  </a>
+</div>
+
+        </div>
+      </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <ul id="toc" class="section-nav">
+<li class="toc-entry toc-h4"><a href="#Introduction:-Latent-Variable-Models">Introduction: Latent Variable Models </a></li>
+<li class="toc-entry toc-h4"><a href="#What-VAEs-do-differently-?">What VAEs do differently ? </a></li>
+<li class="toc-entry toc-h4"><a href="#Method-1:-Maximizing-the-Log-Likelihood-($\log-P(X)$)">Method 1: Maximizing the Log Likelihood ($\log P(X)$) </a></li>
+<li class="toc-entry toc-h4"><a href="#Method-2:-Minimizing-KL-Divergence-between-$q(z|x;-\phi)$-and-$p(z|x)$">Method 2: Minimizing KL Divergence between $q(z|x; \phi)$ and $p(z|x)$ </a></li>
+<li class="toc-entry toc-h4"><a href="#Using-the-ELBO-term-for-Training">Using the ELBO term for Training </a></li>
+<li class="toc-entry toc-h4"><a href="#References">References </a></li>
+</ul><!--
+#################################################
+### THIS FILE WAS AUTOGENERATED! DO NOT EDIT! ###
+#################################################
+# file to edit: _notebooks/2022-04-01-elbo.ipynb
+-->
+
+<div class="container" id="notebook-container">
+        
+<div class="cell border-box-sizing text_cell rendered">
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This blog will basically go through different ways of deriving the objective function (called the Variational Lower Bound or ELBO) for a Variational Autoencoder, a type of generative model.</p>
+<h4 id="Introduction:-Latent-Variable-Models">
+<a class="anchor" href="#Introduction:-Latent-Variable-Models" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction: Latent Variable Models<a class="anchor-link" href="#Introduction:-Latent-Variable-Models"> </a>
+</h4>
+<p>Latent variable models are basically a class of generative models, where we try to model $p(x)$. The setting/assumptions under which they work are as follows,</p>
+<ol>
+<li>A latent/hidden variable ($z\in\mathcal{Z}$) is responsible for generating Images ($x\in\mathcal{X}$)</li>
+<li>It is easy to sample from the distribution $P(z)$ over $\mathcal{Z}$</li>
+<li>A family of deterministic functions $f(z;\theta)$, parametrized by a vector $\theta$ , where $f:\mathcal{Z}\times \theta \rightarrow\mathcal{X}$</li>
+</ol>
+<p>Basically, what this means is, if we sample $z$ from $P(z)$, and run it through $f(z;\theta)$ we should generate samples that look like they are from $P(X)$. These models aim to maximize to probability of each $X$ in the training set and therefore estimate parameters using maximum likelihood estinmation given the generative process,</p>
+$$
+P(X) = \int P(X|z;\theta)P(z)dz
+$$<p>In VAEs specifically,</p>
+<ul>
+<li>
+<p>Output distribution $P(x|z)$  after running it through $f(z;\theta)$ (typically a neural network) is a gaussian distribution 
+$$
+P(x|z;\theta) \sim \mathcal{N}(X|f(z;\theta),\sigma^2I)
+$$
+where $\sigma$ is an hyperparameter</p>
+</li>
+<li>
+<p>Distribution over the latent variable $P(z) = \mathcal{N}(0, I)$</p>
+</li>
+</ul>
+<p>The idea is that if a latent structure exists, the neural network would be able to map the normally distributed $z$ to the latent values (For instance, the value of the digit, position in MNIST) in the first few layers and then use the later layers to generate images that have those latent values.</p>
+<p>Therefore, a way to estimate the $\theta$ in the above $P(x|z; \theta)$ is to,</p>
+<ol>
+<li>Sample a number of $z$ values  </li>
+<li>For each $z_i$ compute $f(z_i;\theta)$</li>
+<li>Use the Monte Carlo Estimate to compute $P(X) = \frac{1}{n}\sum_iP(X|z_i)$ given the values from step 2</li>
+</ol>
+<p>To maximize this $P(X)$, we can minimize the squared distance between $f(z)$ and $X$ (minimizing the negative log likelihood is equivalent to minimizing the squared euclidean distance between $f(z)$ and $X$ [<a href="https://stats.stackexchange.com/questions/143705/maximum-likelihood-method-vs-least-squares-method/265430">Proof</a>]) and use gradient descent to estimate the parameters ( $\theta$ essentially the neural network weights). A visual description of the process is as follows,</p>
+<figure>
+<figure>
+  
+    <img class="docimage" src="/blog/images/copied_from_nb/photos/vae-init.png" alt="vae-init" style="max-width: 300px">
+    
+    
+</figure>
+
+<figcaption> Fig 1. VAE as a Graphical Model </figcaption>
+</figure><p><strong>Why does this training strategy have a problem?</strong> if we take an example of a generative model to predict the digit 2, Figure 2(a) is the target image (X) for which we are trying to find P(X) for.</p>
+<p><strong>Observation</strong>: The prediction Figure 2(b) should be a worse prediction than Figure 2(c) (which is just shifting the digit towards down and right). However the contribution of Figure 2(b) in the likelihood would be more with respect to Figure 2(c) as the euclidean distance between the target and Figure 2(b) is 0.2639 while it is 0.0387 between the target and Figure 2(c).</p>
+<p>Two ways to avoid a situation like this,</p>
+<ul>
+<li>One way could be to keep a small value of $\sigma$  in equation 2 (low value of $\sigma$ means <a href="https://en.wikipedia.org/wiki/Euclidean_distance">euclidean distance</a> is high unless it is very similar to $X$) so as to only allow very similar images to be generated. This means we would need a lot of $z$‘s to be able to generate something similar to $X$ and therefore contribute to likelihood ($P(X)$).</li>
+<li>Another solution is to change the similarity metric (which is euclidean distance currently) so as to generate more similar samples.<figure>
+<figure>
+  
+    <img class="docimage" src="/blog/images/copied_from_nb/photos/sampling-problem.png" alt="sampling-problem" style="max-width: 500px">
+    
+    
+</figure>
+
+<figcaption> Fig.2  It’s hard to measure the likelihood of images under a model using
+only sampling. Given an image X (a), the middle sample (b) is much closer
+in Euclidean distance than the one on the right (c). Because pixel distance is
+so different from perceptual distance, a sample needs to be extremely close
+in pixel distance to a datapoint X before it can be considered evidence that
+X is likely under the model. Reference Paper: https://arxiv.org/pdf/1606.05908.pdf </figcaption>
+</figure>
+</li>
+</ul>
+<h4 id="What-VAEs-do-differently-?">
+<a class="anchor" href="#What-VAEs-do-differently-?" aria-hidden="true"><span class="octicon octicon-link"></span></a>What VAEs do differently ?<a class="anchor-link" href="#What-VAEs-do-differently-?"> </a>
+</h4>
+<p>Change the sampling strategy such that the sampled $z$ that are more likely to have produced $X$. Therefore, if we could sample from the true posterior distribution $p(z|X)$, we could assume we are generating $z$ that are likely to produce $X$. A slight problem that arises here, 
+$$
+p(z|X) = \frac{p(x|z;\theta)p(z)}{\int p(x|z';\theta)p(z')dz} = \frac{p(x|z;\theta)p(z)}{\int N(x|f(z';\theta), \sigma^2I)N(0, I)dz}
+$$
+The posterior is intractable as getting a closed form expression for the above is not possible as $f(z';\theta)$ is a neural network. Therefore, instead of drawing samples from $p(z|x)$, we draw from $q(z|x)$ which is an approximation of the true posterior. However, if we sample from an arbitrary distribution $q(z|x)$ and not from $N(0, I)$, how do we optimize $p(x)$?</p>
+<p>We use the <strong>variational lower bound (ELBO)</strong> to optimize $P(X)$ while sampling $z$ from $q(z|x; \phi)$. There are different ways we can derive the ELBO to understand its need. Let’s go through them one by one.</p>
+<p><strong>What’s $\phi$ in $q(z|x; \phi)$</strong>? We generally use a neural network for $q(z|x; \phi)$. Therefore, $\phi$ are the neural network parameters that are used in the sampling process.</p>
+<h4 id="Method-1:-Maximizing-the-Log-Likelihood-($\log-P(X)$)">
+<a class="anchor" href="#Method-1:-Maximizing-the-Log-Likelihood-(%24%5Clog-P(X)%24)" aria-hidden="true"><span class="octicon octicon-link"></span></a>Method 1: Maximizing the Log Likelihood ($\log P(X)$)<a class="anchor-link" href="#Method-1:-Maximizing-the-Log-Likelihood-(%24%5Clog-P(X)%24)"> </a>
+</h4>
+<p>We can write $p(x)$ as the following expectation using joint probability and conditional probability,</p>
+$$
+\log p(x) = \log \int p(x, z;\theta)dz  = \log \int p(x|z;\theta)p(z)dz  = \log \mathbb{E}_{z\sim p(z)}\left[p(x|z)\right]\\
+$$<p>On dividing and multiplying with the approximate posterior distribution $q(z|x; \phi)$,</p>
+$$
+\log p(x) = \log \int p(x, z;\theta)\frac{q(z|x; \phi)}{q(z|x; \phi)}dz = \log \left( \mathbb{E}_{z \sim q(z|x; \phi)}\left[ \frac{p(x, z;\theta)}{q(z|x; \phi)}\right]\right)
+$$<p>The above term can be modified using Jensen’s Inequality ($\log \mathbb{E}(X) \geq \mathbb{E}(\log(X))$. It applies here since $\log$ is a concave function, read more <a href="https://www.lri.fr/~sebag/COURS/EM_algorithm.pdf">here</a>)</p>
+$$
+\log p(x) =  \log \left( \mathbb{E}_{z \sim q(z|x; \phi)}\left[ \frac{p(x, z;\theta)}{q(z|x; \phi)}\right]\right) \geq \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right]
+$$$$
+\log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right] \tag{1}
+$$<p>The expectation term post Jensen’s Inequality on the right side is known as the <strong>variational lower bound (ELBO)</strong>. It is a lower bound on the $\log P(X)$ and the bound is tight when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (replace the $q(z|x)$ term with $p(z|x)$ in the right hand side).</p>
+<p>If we try to break apart the <strong>ELBO</strong> term using Baye’s rule,</p>
+$$
+\begin{aligned}
+\mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right]&amp; = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log \frac{p(x|z;\theta)p(z)}{q(z|x; \phi)}\right]\\ &amp; = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z)}\right]
+\end{aligned}
+$$<p>The second term $\mathbb{E}_{z \sim q(z|x)}\left[\log \frac{q(z|x)}{p(z)}\right]$ is the KL divergence between $q(z|x)$ and $p(z)$. Therefore, we can write the ELBO objective as</p>
+$$
+\mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right] = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) \tag{2}
+$$<p>The above equation is important as it will serve as the objective function for variational autoencoders. Let’s park this here and look at another way to get the same equation for the Variational Lower Bound.</p>
+<h4 id="Method-2:-Minimizing-KL-Divergence-between-$q(z|x;-\phi)$-and-$p(z|x)$">
+<a class="anchor" href="#Method-2:-Minimizing-KL-Divergence-between-%24q(z%7Cx;-%5Cphi)%24-and-%24p(z%7Cx)%24" aria-hidden="true"><span class="octicon octicon-link"></span></a>Method 2: Minimizing KL Divergence between $q(z|x; \phi)$ and $p(z|x)$<a class="anchor-link" href="#Method-2:-Minimizing-KL-Divergence-between-%24q(z%7Cx;-%5Cphi)%24-and-%24p(z%7Cx)%24"> </a>
+</h4>
+<p>The main change that we bring about in a variational autoencoder is the approximation ($q(z|x; \phi)$) for the true posterior ($p(z|x)$) which we use for sampling. The KL divergence betweeen $q(z|x)$ and $p(z|x)$ is as follows,</p>
+$$
+D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z|x)}\right]
+$$<p>On using Baye’s rule to replace $p(z|x)$ as $\large\frac{p(x|z)p(z)}{p(x)}$ in the above equation,</p>
+$$
+D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z|x)}\right] = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)p(x)}{p(x|z)p(z)}\right]
+$$<p>We can remove the $p(x)$ term outside as it does not depend on $z$ and take it out of the expectation,</p>
+$$
+\begin{aligned}
+D_{KL}(q(z|x; \phi)||p(z|x)) &amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)p(x)}{p(x|z)p(z)}\right] \\&amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(x|z)p(z)}\right] + \log p(x)
+\end{aligned}
+$$<p>On rearranging the terms (take the expectation term from $RHS$ to $LHS$ and using property of logarithms),</p>
+$$
+\log p(x) = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z)}\right] + D_{KL}(q(z|x; \phi)||p(z|x))
+$$<p>The first two terms on the RHS looks exactly same as the deconstructed ELBO term that we derived in equation 2. And as we know that the KL divergence metric is always greater than equal to 0, we can rewrite the above equation as,</p>
+$$
+\log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) = ELBO(\theta, \phi)
+$$<p>where equality holds when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (Also seen in Equation 1).</p>
+<h4 id="Using-the-ELBO-term-for-Training">
+<a class="anchor" href="#Using-the-ELBO-term-for-Training" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the ELBO term for Training<a class="anchor-link" href="#Using-the-ELBO-term-for-Training"> </a>
+</h4>
+<p>As we now have the objective function, we can now describe the specifics of the training process (see figure 3),</p>
+<p><strong>1. Encoder for $q(z|x;\phi)$​</strong>:</p>
+<ul>
+<li>An encoder network helps in sampling $z$ from $q(z|x; \phi)$. The encoder instead of directly sampling $z$ , outputs the value of mean $\mu$ and variance $\Sigma$ of the distribution $q(z|x)$. [Reason covered later]</li>
+<li>The $\phi$ term in the encoder represents the parameters of the neural network.</li>
+<li>In order to now sample from this distribution $q(z|x; \phi)$ with the given mean and variance, we sample multiple $z$‘s from $N(0, I)$ and shift and scale them based on the mean and variance derived from the encoder [<em>Reparametrization Trick</em>]. </li>
+</ul>
+<p><strong>2. Decoder for $p(x|z; \theta)$</strong></p>
+<ul>
+<li>Given a $z$ from $q(z|x)$, we can try to get $p(x|z)$ using the decoder network $f(z;\theta)$. The decoder network is responsible for predicting the mean of $p(x|z; \theta) = N(x | f(z;\theta), \sigma^2I)$$</li>
+</ul>
+<p><strong>3. Loss function (ELBO Term)</strong></p>
+<ul>
+<li>The ELBO objective is maximized to train the model. The objective is as follows,</li>
+</ul>
+$$
+ELBO(\theta, \phi) = \mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z))
+$$<ul>
+<li>The first term can be seen as the reconstruction error term (maximizing ELBO will minize the reconstruction loss),  </li>
+</ul>
+$$
+\mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] \sim \frac{1}{m}\sum_j-\left[\frac{x - f(z_j;\phi)}{2\sigma^2}\right]^2
+$$<ul>
+<li>The second term can be seen as KL to the prior (maximizing ELBO will decrease the distance between variational approximated posterior $q(z|x; \phi)$ and $p(z)$). As both $q(z|x; \phi)$ and $p(z)$ are gaussians, the KL term has a <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions">closed form expression</a>.</li>
+</ul>
+<figure>
+<figure>
+  
+    <img class="docimage" src="/blog/images/copied_from_nb/photos/vae-fn.png" alt="VAE Training Process" style="max-width: 700px">
+    
+    
+</figure>
+
+<figcaption> Fig 3. VAE Training Process </figcaption>
+</figure><h4 id="References">
+<a class="anchor" href="#References" aria-hidden="true"><span class="octicon octicon-link"></span></a>References<a class="anchor-link" href="#References"> </a>
+</h4>
+<ol>
+<li><a href="https://www.borealisai.com/en/blog/tutorial-5-variational-auto-encoders/">Tutorial 5: variational autoencoders</a></li>
+<li><a href="https://www.lri.fr/~sebag/COURS/EM_algorithm.pdf">The Expectation Maximization Algorithm A short tutorial</a></li>
+<li><a href="https://arxiv.org/pdf/1606.05908.pdf">Tutorial on Variational Autoencoders</a></li>
+</ol>
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+  </div><!-- from https://github.com/utterance/utterances -->
+<script src="https://utteranc.es/client.js"
+        repo="shenoynikhil/blog"
+        issue-term="title"
+        label="blogpost-comment"
+        theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script><a class="u-url" href="/blog/generative%20models/2022/04/01/elbo.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/blog/"></data>
+
+  <div class="wrapper">
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col">
+        <p class="feed-subscribe">
+          <a href="/blog/feed.xml">
+            <svg class="svg-icon orange">
+              <use xlink:href="/blog/assets/minima-social-icons.svg#rss"></use>
+            </svg><span>Subscribe</span>
+          </a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <p></p>
+      </div>
+    </div>
+
+    <div class="social-links"><ul class="social-media-list"><li><a rel="me" href="https://github.com/shenoynikhil" target="_blank" title="shenoynikhil"><svg class="svg-icon grey"><use xlink:href="/blog/assets/minima-social-icons.svg#github"></use></svg></a></li><li><a rel="me" href="https://twitter.com/nikhilshenoy12" target="_blank" title="nikhilshenoy12"><svg class="svg-icon grey"><use xlink:href="/blog/assets/minima-social-icons.svg#twitter"></use></svg></a></li></ul>
+</div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
