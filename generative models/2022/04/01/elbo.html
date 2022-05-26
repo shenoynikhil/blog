@@ -161,7 +161,7 @@ window.onload = wrap_img;
 <li>It is easy to sample from the distribution $P(z)$ over $\mathcal{Z}$</li>
 <li>A family of deterministic functions $f(z;\theta)$, parametrized by a vector $\theta$ , where $f:\mathcal{Z}\times \theta \rightarrow\mathcal{X}$</li>
 </ol>
-<p>Basically, what this means is, if we sample $z$ from $P(z)$, and run it through $f(z;\theta)$ we should generate samples that look like they are from $P(X)$. These models aim to maximize to probability of each $X$ in the training set and therefore estimate parameters using maximum likelihood estinmation given the generative process,</p>
+<p>Basically, what this means is, if we sample $z$ from $P(z)$, and run it through $f(z;\theta)$ we should generate samples that look like they are from $P(X)$. These models aim to maximize to probability of each $X$ in the training set and therefore estimate parameters using maximum likelihood estimation given the generative process,</p>
 $$
 P(X) = \int P(X|z;\theta)P(z)dz
 $$<p>In VAEs specifically,</p>
