@@ -151,7 +151,7 @@ window.onload = wrap_img;
 <div class="cell border-box-sizing text_cell rendered">
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>This blog will basically go through different ways of deriving the objective function (called the Variational Lower Bound or ELBO) for a Variational Autoencoder, a type of generative model.</p>
+<p>This blog will basically go through different ways of deriving the objective function (called the Variational Lower Bound or ELBO) for a Variational Autoencoder (VAE), a type of generative model.</p>
 <h4 id="Introduction:-Latent-Variable-Models">
 <a class="anchor" href="#Introduction:-Latent-Variable-Models" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction: Latent Variable Models<a class="anchor-link" href="#Introduction:-Latent-Variable-Models"> </a>
 </h4>
@@ -195,7 +195,7 @@ where $\sigma$ is an hyperparameter</p>
 
 <figcaption> Fig 1. VAE as a Graphical Model </figcaption>
 </figure><p><strong>Why does this training strategy have a problem?</strong> if we take an example of a generative model to predict the digit 2, Figure 2(a) is the target image (X) for which we are trying to find P(X) for.</p>
-<p><strong>Observation</strong>: The prediction Figure 2(b) should be a worse prediction than Figure 2(c) (which is just shifting the digit towards down and right). However the contribution of Figure 2(b) in the likelihood would be more with respect to Figure 2(c) as the euclidean distance between the target and Figure 2(b) is 0.2639 while it is 0.0387 between the target and Figure 2(c).</p>
+<p><strong>Observation</strong>: The prediction Figure 2(b) should be a worse prediction than Figure 2(c) (which is just shifting the digit towards down and right). However the contribution of Figure 2(b) in the likelihood would be more with respect to Figure 2(c) as the euclidean distance between the target and Figure 2(b) is 0.0387 while it is 0.2639 between the target and Figure 2(c).</p>
 <p>Two ways to avoid a situation like this,</p>
 <ul>
 <li>One way could be to keep a small value of $\sigma$  in equation 2 (low value of $\sigma$ means <a href="https://en.wikipedia.org/wiki/Euclidean_distance">euclidean distance</a> is high unless it is very similar to $X$) so as to only allow very similar images to be generated. This means we would need a lot of $z$‘s to be able to generate something similar to $X$ and therefore contribute to likelihood ($P(X)$).</li>
