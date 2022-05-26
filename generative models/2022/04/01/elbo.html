@@ -93,7 +93,7 @@ window.onload = wrap_img;
        • <span class="read-time" title="Estimated read time">
     
     
-      9 min read
+      12 min read
     
 </span></p>
 
@@ -137,7 +137,9 @@ window.onload = wrap_img;
 <li class="toc-entry toc-h4"><a href="#What-VAEs-do-differently-?">What VAEs do differently ? </a></li>
 <li class="toc-entry toc-h4"><a href="#Method-1:-Maximizing-the-Log-Likelihood-($\log-P(X)$)">Method 1: Maximizing the Log Likelihood ($\log P(X)$) </a></li>
 <li class="toc-entry toc-h4"><a href="#Method-2:-Minimizing-KL-Divergence-between-$q(z|x;-\phi)$-and-$p(z|x)$">Method 2: Minimizing KL Divergence between $q(z|x; \phi)$ and $p(z|x)$ </a></li>
-<li class="toc-entry toc-h4"><a href="#Using-the-ELBO-term-for-Training">Using the ELBO term for Training </a></li>
+<li class="toc-entry toc-h4"><a href="#Gradient-Descent-over-ELBO">Gradient Descent over ELBO </a></li>
+<li class="toc-entry toc-h4"><a href="#Reparametrization-Trick">Reparametrization Trick </a></li>
+<li class="toc-entry toc-h4"><a href="#Training-with-ELBO">Training with ELBO </a></li>
 <li class="toc-entry toc-h4"><a href="#References">References </a></li>
 </ul><!--
 #################################################
@@ -271,13 +273,90 @@ $$<p>The first two terms on the RHS looks exactly same as the deconstructed ELBO
 $$
 \log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) = ELBO(\theta, \phi)
 $$<p>where equality holds when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (Also seen in Equation 1).</p>
-<h4 id="Using-the-ELBO-term-for-Training">
-<a class="anchor" href="#Using-the-ELBO-term-for-Training" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the ELBO term for Training<a class="anchor-link" href="#Using-the-ELBO-term-for-Training"> </a>
+<h4 id="Gradient-Descent-over-ELBO">
+<a class="anchor" href="#Gradient-Descent-over-ELBO" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gradient Descent over ELBO<a class="anchor-link" href="#Gradient-Descent-over-ELBO"> </a>
 </h4>
-<p>As we now have the objective function, we can now describe the specifics of the training process (see figure 3),</p>
+<p>In summary, maximizing the ELBO objective (a lower bound on $\log p(x)$) will maximize the likelihood from</p>
+$$
+ELBO() \rightarrow \mathbb{E}_{z\sim q_\phi(z)}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x) }\right]
+$$<p>We basically need to find out $\theta$ and $\phi$ s.t</p>
+$$
+\theta^*, \phi^* = \max_{\theta}\sum_{i}\max_{\phi}\mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right]
+$$<p>The inner summation is over multiple $z_i$ sampled for each x. So we maximize over $\phi$ and then over $\theta$. We can look at this as a two step process,</p>
+$$
+\phi_{i} \leftarrow \phi_{i} + \alpha \nabla_\phi ELBO(x_i, \theta, \phi_i) \\
+\theta \leftarrow \theta + \beta \nabla_\theta \sum_i ELBO(x_i, \theta, \phi_i)
+$$<p>The gradients wrt to $\theta$ can be computed easily as the only term that depends on $\theta$ is $p_\theta(x, z_i)$, where $\theta$ is the neural network weights.</p>
+$$
+\nabla_\theta ELBO = \nabla_\theta\left[\mathbb{E}_{q_\phi}\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right]
+$$<p>The gradient wrt to $\phi$ can be computed as,</p>
+$$
+\begin{aligned}
+\nabla_\phi ELBO &amp; = \nabla_\phi\left[\mathbb{E}_{q_\phi}\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right] \\
+&amp;= \nabla_\phi\left[\int q_\phi(z|x)f_\phi(.)dz\right] \\
+&amp;= \int \nabla_\phi q_\phi(z|x)f_\phi(.) + q_\phi(z|x)\nabla_\phi f_\phi (.)dz \\
+\end{aligned}
+$$<p>If we use the <a href="https://math.stackexchange.com/questions/2554749/whats-the-trick-in-log-derivative-trick">log derivative trick</a>  ($\nabla p(x) = p(x)\nabla \log p(x)$), for the first term,</p>
+$$
+\begin{aligned}
+\nabla_\phi ELBO &amp;= \int q_\phi(z|x)f_\phi(.)\nabla_\phi\log q_\phi(z|x) + q_\phi(z|x)\nabla_\phi f_\phi (.)dz \\
+&amp;= \int q_\phi(z|x)\left[f_\phi(.)\nabla_\phi\log q_\phi(z|x) + \nabla_\phi f_\phi (.)\right]dz \\
+&amp;= \mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\nabla_\phi\log q_\phi(z|x) + \nabla_\phi f_\phi (.)\right] \\
+\end{aligned}
+$$<p>The second term can be removed by</p>
+$$
+\begin{aligned}
+\mathbb{E}_{q_\phi}\left[\nabla_\phi f_\phi (.)\right] &amp;= \mathbb{E}_{q_\phi}\left[\nabla_\phi \log\frac{p_\theta(x, z)}{q_\phi(z|x)}\right]\\ &amp;= \mathbb{E}_{q_\phi}\left[-\nabla_\phi \log q_\phi(z|x)\right]\\
+&amp;= -\int q_\phi(z|x)\nabla_\phi \log q_\phi(z|x) dz \\
+&amp;= -\int q_\phi(z|x) \frac{\nabla_\phi q_\phi(z|x)}{q_\phi(z|x)} dz \\
+&amp;= -\int \nabla_\phi q_\phi(z|x) dz \\
+&amp;= -\nabla_\phi \int q_\phi(z|x) dz = -\nabla_\phi \int q_\phi(z|x) dz = - \nabla_\phi (1)\\
+&amp;= 0
+\end{aligned}
+$$<p>Replace the above change for the right hand side term,</p>
+$$
+\nabla_\phi ELBO = \mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\nabla_\phi\log q_\phi(z|x)  \right]
+$$<p>The emperical form of ELBO can be written as,</p>
+$$
+\text{Emperical Form : }\nabla_\phi \hat{ELBO} = \frac{1}{k}\sum_{i = 1}^{k}\left[\left(\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\right)\nabla_\phi\log q_\phi(z|x)\right]
+$$<p>Two conditions would be needed now to to compute this estimate,</p>
+<ol>
+<li>We need to be able to sample $z$</li>
+<li>The derivative of $ \log q_\phi(z|x)$ exists</li>
+</ol>
+<p>Awesome! we now have a method to compute the gradient.</p>
+<p><strong>Unfortunately! This poses a problem as well</strong></p>
+<p>The gradient using this Monte Carlo estimate has a high variance and we need large number of samples before we can get a decent estimate. As our neural network $q_\phi(z|x)$ which generates a single $z$ after a forward pass with $x$, we would end up with the following issues.</p>
+<ol>
+<li>To get multiple z’s is hard, as we are sampling one z per x through the neural network --&gt; Computational Efficiency Problem</li>
+<li>To get gradients on $\phi$, we would have to backpropogate through a stochastic node [Look at Fig 3] (Stochastic node as the node represents an entire distribution)</li>
+<li>The estimate for the gradient has high variance (refer to this <a href="https://mpatacchiola.github.io/blog/2021/02/08/intro-variational-inference-2.html">excellently written blog</a>)</li>
+</ol>
+<h4 id="Reparametrization-Trick">
+<a class="anchor" href="#Reparametrization-Trick" aria-hidden="true"><span class="octicon octicon-link"></span></a>Reparametrization Trick<a class="anchor-link" href="#Reparametrization-Trick"> </a>
+</h4>
+<p>Instead of the neural network directly sampling from the distribution $q_\phi$, instead we sample the distribution itself. Now the sampling process is as follows,</p>
+<ol>
+<li>Neural Network $q_\phi$ predicts the mean $\mu$ and standard deviation $\sigma$ of a normal distribution</li>
+<li>Sample multiple $\epsilon$ from a standard normal, $\mathcal{N}(0, I)$</li>
+<li>To get $z$, we use a deterministic differentiable function $T$ s.t. $z = T(\epsilon; \mu, \sigma)$</li>
+</ol>
+<figure>
+<figure>
+  
+    <img class="docimage" src="/blog/images/copied_from_nb/photos/reparam_trick.png" alt="Reparameterization Trick">
+    
+    
+</figure>
+
+<figcaption> Fig 3. Reparametrization Trick </figcaption>
+</figure><h4 id="Training-with-ELBO">
+<a class="anchor" href="#Training-with-ELBO" aria-hidden="true"><span class="octicon octicon-link"></span></a>Training with ELBO<a class="anchor-link" href="#Training-with-ELBO"> </a>
+</h4>
+<p>As we now have the objective function, we can now describe the specifics of the training process (see figure xx),</p>
 <p><strong>1. Encoder for $q(z|x;\phi)$​</strong>:</p>
 <ul>
-<li>An encoder network helps in sampling $z$ from $q(z|x; \phi)$. The encoder instead of directly sampling $z$ , outputs the value of mean $\mu$ and variance $\Sigma$ of the distribution $q(z|x)$. [Reason covered later]</li>
+<li>An encoder network helps in sampling $z$ from $q(z|x; \phi)$. The encoder instead of directly sampling $z$ , outputs the value of mean $\mu$ and variance $\Sigma$ of the distribution $q(z|x)$.</li>
 <li>The $\phi$ term in the encoder represents the parameters of the neural network.</li>
 <li>In order to now sample from this distribution $q(z|x; \phi)$ with the given mean and variance, we sample multiple $z$‘s from $N(0, I)$ and shift and scale them based on the mean and variance derived from the encoder [<em>Reparametrization Trick</em>]. </li>
 </ul>
@@ -290,7 +369,7 @@ $$<p>where equality holds when the approximated posterior $q(z|x)$ matches the t
 <li>The ELBO objective is maximized to train the model. The objective is as follows,</li>
 </ul>
 $$
-ELBO(\theta, \phi) = \mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z))
+ELBO(\theta, \phi) = \mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi)\: ||\: p(z))
 $$<ul>
 <li>The first term can be seen as the reconstruction error term (maximizing ELBO will minize the reconstruction loss),  </li>
 </ul>
@@ -302,12 +381,12 @@ $$<ul>
 <figure>
 <figure>
   
-    <img class="docimage" src="/blog/images/copied_from_nb/photos/vae-fn.png" alt="VAE Training Process" style="max-width: 700px">
+    <img class="docimage" src="/blog/images/copied_from_nb/photos/vae-fn.png" alt="Screenshot 2022-02-21 at 1.27.08 PM">
     
     
 </figure>
 
-<figcaption> Fig 3. VAE Training Process </figcaption>
+<figcaption> Fig 4. Training a VAE </figcaption>
 </figure><h4 id="References">
 <a class="anchor" href="#References" aria-hidden="true"><span class="octicon octicon-link"></span></a>References<a class="anchor-link" href="#References"> </a>
 </h4>
@@ -315,6 +394,7 @@ $$<ul>
 <li><a href="https://www.borealisai.com/en/blog/tutorial-5-variational-auto-encoders/">Tutorial 5: variational autoencoders</a></li>
 <li><a href="https://www.lri.fr/~sebag/COURS/EM_algorithm.pdf">The Expectation Maximization Algorithm A short tutorial</a></li>
 <li><a href="https://arxiv.org/pdf/1606.05908.pdf">Tutorial on Variational Autoencoders</a></li>
+<li><a href="https://stats.stackexchange.com/questions/199605/how-does-the-reparameterization-trick-for-vaes-work-and-why-is-it-important">Why does the reparametrization trick work?</a></li>
 </ol>
 
 </div>
