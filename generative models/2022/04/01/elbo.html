@@ -276,7 +276,7 @@ $$<p>where equality holds when the approximated posterior $q(z|x)$ matches the t
 <h4 id="Gradient-Descent-over-ELBO">
 <a class="anchor" href="#Gradient-Descent-over-ELBO" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gradient Descent over ELBO<a class="anchor-link" href="#Gradient-Descent-over-ELBO"> </a>
 </h4>
-<p>In summary, maximizing the ELBO objective (a lower bound on $\log p(x)$) will maximize the likelihood from</p>
+<p>In summary, maximizing the ELBO objective (a lower bound on $\log p(x)$) will maximize the likelihood.</p>
 $$
 ELBO() \rightarrow \mathbb{E}_{z\sim q_\phi(z)}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x) }\right]
 $$<p>We basically need to find out $\theta$ and $\phi$ s.t</p>
