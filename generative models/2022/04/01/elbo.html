@@ -195,7 +195,7 @@ where $\sigma$ is an hyperparameter</p>
 
 <figcaption> Fig 1. VAE as a Graphical Model </figcaption>
 </figure><p><strong>Why does this training strategy have a problem?</strong> if we take an example of a generative model to predict the digit 2, Figure 2(a) is the target image (X) for which we are trying to find P(X) for.</p>
-<p><strong>Observation</strong>: There is a stark difference is simple euclidean distance and perceptual distance. The prediction Figure 2(b) should be a worse prediction than Figure 2(c) (which is just shifting the digit towards down and right). However the contribution of Figure 2(b) in the likelihood would be more with respect to Figure 2(c) as the euclidean distance between the target and Figure 2(b) is 0.0387 while it is 0.2639 between the target and Figure 2(c).</p>
+<p><strong>Observation</strong>: There is a stark difference between simple euclidean distance and perceptual distance. The prediction Figure 2(b) should be a worse prediction than Figure 2(c) (which is just shifting the digit towards down and right). However the contribution of Figure 2(b) in the likelihood would be more with respect to Figure 2(c) as the euclidean distance between the target and Figure 2(b) is 0.0387 while it is 0.2639 between the target and Figure 2(c).</p>
 <p>Two ways to avoid a situation like this,</p>
 <ul>
 <li>One way could be to keep a small value of $\sigma$  in equation 2 (low value of $\sigma$ means <a href="https://en.wikipedia.org/wiki/Euclidean_distance">euclidean distance</a> is high unless it is very similar to $X$) so as to only allow very similar images to be generated. This means we would need a lot of $z$‘s to be able to generate something similar to $X$ and therefore contribute to likelihood ($P(X)$).</li>
@@ -222,8 +222,8 @@ X is likely under the model. Reference Paper: https://arxiv.org/pdf/1606.05908.p
 <p>Change the sampling strategy such that the sampled $z$ that are more likely to have produced $X$. Therefore, if we could sample from the true posterior distribution $p(z|X)$, we could assume we are generating $z$ that are likely to produce $X$. A slight problem that arises here, 
 $$
 p(z|X) = \frac{p(x|z;\theta)p(z)}{\int p(x|z';\theta)p(z')dz} = \frac{p(x|z;\theta)p(z)}{\int N(x|f(z';\theta), \sigma^2I)N(0, I)dz}
-$$
-The posterior is intractable as getting a <a href="https://en.wikipedia.org/wiki/Closed-form_expression">closed form expression</a> for the above is not possible as $f(z';\theta)$ is a neural network. Therefore, instead of drawing samples from $p(z|x)$, we draw from $q(z|x)$ which is an approximation of the true posterior. However, if we sample from an arbitrary distribution $q(z|x)$ and not from $N(0, I)$, how do we optimize $p(x)$?</p>
+$$</p>
+<p>The posterior is intractable as getting a <a href="https://en.wikipedia.org/wiki/Closed-form_expression">closed form expression</a> for the denominator $\int N(x|f(z';\theta), \sigma^2I)N(0, I)$ in the above equation is not possible as the mean of the left term $f(z';\theta)$ is a neural network and computing an expression using standard methods is difficult. The solution generally in these cases is to either use : (1) Markov chain Monte Carlo and (2) variational inference. Therefore, instead of drawing samples from $p(z|x)$, we draw from $q(z|x)$ which is an approximation of the true posterior. However, if we sample from an arbitrary distribution $q(z|x)$ and not from $N(0, I)$, how do we optimize $p(x)$?</p>
 <p>We use the <strong>variational lower bound (ELBO)</strong> to optimize $P(X)$ while sampling $z$ from $q(z|x; \phi)$. There are different ways we can derive the ELBO to understand its need. Let’s go through them one by one.</p>
 <p><strong>What’s $\phi$ in $q(z|x; \phi)$</strong>? We generally use a neural network for $q(z|x; \phi)$. Therefore, $\phi$ are the neural network parameters that are used in the sampling process.</p>
 <h4 id="Method-1:-Maximizing-the-Log-Likelihood-($\log-P(X)$)">
