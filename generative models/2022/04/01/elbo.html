@@ -165,13 +165,13 @@ window.onload = wrap_img;
 </ol>
 <p>Basically, what this means is, if we sample $z$ from $P(z)$, and run it through $f(z;\theta)$ we should generate samples that look like they are from $P(X)$. These models aim to maximize to probability of each $X$ in the training set and therefore estimate parameters using maximum likelihood estimation given the generative process,</p>
 $$
-P(X) = \int P(X|z;\theta)P(z)dz
+P(X) = \int P(X|z;\theta)P(z)dz \tag{1}
 $$<p>In VAEs specifically,</p>
 <ul>
 <li>
 <p>Output distribution $P(x|z)$  after running it through $f(z;\theta)$ (typically a neural network) is a gaussian distribution 
 $$
-P(x|z;\theta) \sim \mathcal{N}(X|f(z;\theta),\sigma^2I)
+P(x|z;\theta) \sim \mathcal{N}(X|f(z;\theta),\sigma^2I) \tag{2}
 $$
 where $\sigma$ is an hyperparameter</p>
 </li>
@@ -223,7 +223,7 @@ X is likely under the model. Reference Paper: https://arxiv.org/pdf/1606.05908.p
 </h4>
 <p>Change the sampling strategy such that the sampled $z$ that are more likely to have produced $X$. Therefore, if we could sample from the true posterior distribution $p(z|X)$, we could assume we are generating $z$ that are likely to produce $X$. A slight problem that arises here, 
 $$
-p(z|X) = \frac{p(x|z;\theta)p(z)}{\int p(x|z';\theta)p(z')dz} = \frac{p(x|z;\theta)p(z)}{\int N(x|f(z';\theta), \sigma^2I)N(0, I)dz}
+p(z|X) = \frac{p(x|z;\theta)p(z)}{\int p(x|z';\theta)p(z')dz} = \frac{p(x|z;\theta)p(z)}{\int N(x|f(z';\theta), \sigma^2I)N(0, I)dz} \tag{3}
 $$</p>
 <p>The posterior is intractable as getting a <a href="https://en.wikipedia.org/wiki/Closed-form_expression">closed form expression</a> for the denominator $\int N(x|f(z';\theta), \sigma^2I)N(0, I)$ in the above equation is not possible as the mean of the left term $f(z';\theta)$ is a neural network and computing a closed form expression using standard methods is difficult. Therefore, instead of drawing samples from $p(z|x)$, we draw from $q(z|x)$ which is an approximation of the true posterior. However, if we sample from an arbitrary distribution $q(z|x)$ and not from $N(0, I)$, how do we optimize $p(x)$?</p>
 <p>We use the <strong>variational lower bound (ELBO)</strong> to optimize $P(X)$ while sampling $z$ from $q(z|x; \phi)$. There are different ways we can derive the ELBO to understand its need. Let’s go through them one by one.</p>
@@ -233,34 +233,34 @@ $$</p>
 </h4>
 <p>We can write $p(x)$ as the following expectation using joint probability and conditional probability,</p>
 $$
-\log p(x) = \log \int p(x, z;\theta)dz  = \log \int p(x|z;\theta)p(z)dz  = \log \mathbb{E}_{z\sim p(z)}\left[p(x|z)\right]\\
+\log p(x) = \log \int p(x, z;\theta)dz  = \log \int p(x|z;\theta)p(z)dz  = \log \mathbb{E}_{z\sim p(z)}\left[p(x|z)\right]  \tag{4}\\
 $$<p>On dividing and multiplying with the approximate posterior distribution $q(z|x; \phi)$,</p>
 $$
-\log p(x) = \log \int p(x, z;\theta)\frac{q(z|x; \phi)}{q(z|x; \phi)}dz = \log \left( \mathbb{E}_{z \sim q(z|x; \phi)}\left[ \frac{p(x, z;\theta)}{q(z|x; \phi)}\right]\right)
+\log p(x) = \log \int p(x, z;\theta)\frac{q(z|x; \phi)}{q(z|x; \phi)}dz = \log \left( \mathbb{E}_{z \sim q(z|x; \phi)}\left[ \frac{p(x, z;\theta)}{q(z|x; \phi)}\right]\right)  \tag{5}
 $$<p>The above term can be modified using Jensen’s Inequality ($\log \mathbb{E}(X) \geq \mathbb{E}(\log(X))$. It applies here since $\log$ is a concave function, read more <a href="https://www.lri.fr/~sebag/COURS/EM_algorithm.pdf">here</a>)</p>
 $$
-\log p(x) =  \log \left( \mathbb{E}_{z \sim q(z|x; \phi)}\left[ \frac{p(x, z;\theta)}{q(z|x; \phi)}\right]\right) \geq \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right]
+\log p(x) =  \log \left( \mathbb{E}_{z \sim q(z|x; \phi)}\left[ \frac{p(x, z;\theta)}{q(z|x; \phi)}\right]\right) \geq \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right]  \tag{6}
 $$$$
-\log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right] \tag{1}
+\log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right] \tag{7}
 $$<p>The expectation term post Jensen’s Inequality on the right side is known as the <strong>variational lower bound (ELBO)</strong>. It is a lower bound on the $\log P(X)$ and the bound is tight when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (replace the $q(z|x)$ term with $p(z|x)$ in the right hand side).</p>
 <p>If we try to break apart the <strong>ELBO</strong> term using Baye’s rule,</p>
 $$
 \begin{aligned}
 \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right]&amp; = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log \frac{p(x|z;\theta)p(z)}{q(z|x; \phi)}\right]\\ &amp; = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z)}\right]
-\end{aligned}
+\end{aligned} \tag{8}
 $$<p>The second term $\mathbb{E}_{z \sim q(z|x)}\left[\log \frac{q(z|x)}{p(z)}\right]$ is the KL divergence between $q(z|x)$ and $p(z)$. Therefore, we can write the ELBO objective as</p>
 $$
-\mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right] = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) \tag{2}
+\mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{p(x, z;\theta)}{q(z|x; \phi)} \right] = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) \tag{9}
 $$<p>The above equation is important as it will serve as the objective function for variational autoencoders. Let’s park this here and look at another way to get the same equation for the Variational Lower Bound.</p>
 <h4 id="Method-2:-Minimizing-KL-Divergence-between-$q(z|x;-\phi)$-and-$p(z|x)$">
 <a class="anchor" href="#Method-2:-Minimizing-KL-Divergence-between-%24q(z%7Cx;-%5Cphi)%24-and-%24p(z%7Cx)%24" aria-hidden="true"><span class="octicon octicon-link"></span></a>Method 2: Minimizing KL Divergence between $q(z|x; \phi)$ and $p(z|x)$<a class="anchor-link" href="#Method-2:-Minimizing-KL-Divergence-between-%24q(z%7Cx;-%5Cphi)%24-and-%24p(z%7Cx)%24"> </a>
 </h4>
 <p>The main change that we bring about in a variational autoencoder is the approximation ($q(z|x; \phi)$) for the true posterior ($p(z|x)$) which we use for sampling. The KL divergence betweeen $q(z|x)$ and $p(z|x)$ is as follows,</p>
 $$
-D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z|x)}\right]
+D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z|x)}\right] \tag{10}
 $$<p>On using Baye’s rule to replace $p(z|x)$ as $\large\frac{p(x|z)p(z)}{p(x)}$ in the above equation,</p>
 $$
-D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z|x)}\right] = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)p(x)}{p(x|z)p(z)}\right]
+D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z|x)}\right] = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)p(x)}{p(x|z)p(z)}\right] \tag{11}
 $$<p>We can remove the $p(x)$ term outside as it does not depend on $z$ and take it out of the expectation,</p>
 $$
 \begin{aligned}
@@ -269,10 +269,10 @@ D_{KL}(q(z|x; \phi)||p(z|x)) &amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \
 $$<p>On rearranging the terms (take the expectation term from $RHS$ to $LHS$ and using property of logarithms),</p>
 $$
 \log p(x) = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z)}\right] + D_{KL}(q(z|x; \phi)||p(z|x))
-$$<p>The first two terms on the RHS looks exactly same as the deconstructed ELBO term that we derived in equation 2. And as we know that the KL divergence metric is always greater than equal to 0, we can rewrite the above equation as,</p>
+$$<p>The first two terms on the RHS looks exactly same as the deconstructed ELBO term that we derived in equation 9. And as we know that the KL divergence metric is always greater than equal to 0, we can rewrite the above equation as,</p>
 $$
 \log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) = ELBO(\theta, \phi)
-$$<p>where equality holds when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (Also seen in Equation 1).</p>
+$$<p>where equality holds when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (Also seen in Equation 7).</p>
 <h4 id="Gradient-Descent-over-ELBO">
 <a class="anchor" href="#Gradient-Descent-over-ELBO" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gradient Descent over ELBO<a class="anchor-link" href="#Gradient-Descent-over-ELBO"> </a>
 </h4>
