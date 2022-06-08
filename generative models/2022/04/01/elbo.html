@@ -264,44 +264,48 @@ D_{KL}(q(z|x; \phi)||p(z|x)) = \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{
 $$<p>We can remove the $p(x)$ term outside as it does not depend on $z$ and take it out of the expectation,</p>
 $$
 \begin{aligned}
-D_{KL}(q(z|x; \phi)||p(z|x)) &amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)p(x)}{p(x|z)p(z)}\right] \\&amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(x|z)p(z)}\right] + \log p(x)
+D_{KL}(q(z|x; \phi)||p(z|x)) &amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)p(x)}{p(x|z)p(z)}\right] \\&amp;= \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(x|z)p(z)}\right] + \log p(x) \tag{12}
 \end{aligned}
 $$<p>On rearranging the terms (take the expectation term from $RHS$ to $LHS$ and using property of logarithms),</p>
 $$
-\log p(x) = \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z)}\right] + D_{KL}(q(z|x; \phi)||p(z|x))
+\begin{aligned}
+\log p(x) &amp;= \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - \mathbb{E}_{z \sim q(z|x; \phi)}\left[\log \frac{q(z|x; \phi)}{p(z)}\right] + D_{KL}(q(z|x; \phi)||p(z|x))  \\
+&amp;= \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) + D_{KL}(q(z|x; \phi)||p(z|x))
+\tag {13}
+\end{aligned}
 $$<p>The first two terms on the RHS looks exactly same as the deconstructed ELBO term that we derived in equation 9. And as we know that the KL divergence metric is always greater than equal to 0, we can rewrite the above equation as,</p>
 $$
-\log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) = ELBO(\theta, \phi)
+\log p(x) \geq \mathbb{E}_{z \sim q(z|x; \phi)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi) || p(z)) = ELBO(\theta, \phi) \tag{14}
 $$<p>where equality holds when the approximated posterior $q(z|x)$ matches the true posterior $p(z|x)$ (Also seen in Equation 7).</p>
 <h4 id="Gradient-Descent-over-ELBO">
 <a class="anchor" href="#Gradient-Descent-over-ELBO" aria-hidden="true"><span class="octicon octicon-link"></span></a>Gradient Descent over ELBO<a class="anchor-link" href="#Gradient-Descent-over-ELBO"> </a>
 </h4>
 <p>In summary, maximizing the ELBO objective (a lower bound on $\log p(x)$) will maximize the likelihood.</p>
 $$
-ELBO() \rightarrow \mathbb{E}_{z\sim q_\phi(z)}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x) }\right]
+ELBO() \rightarrow \mathbb{E}_{z\sim q_\phi(z)}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x) }\right] \tag{15}
 $$<p>We basically need to find out $\theta$ and $\phi$ s.t</p>
 $$
-\theta^*, \phi^* = \max_{\theta}\sum_{i}\max_{\phi}\mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right]
+\theta^*, \phi^* = \max_{\theta}\sum_{i}\max_{\phi}\mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right] \tag{16}
 $$<p>The inner summation is over multiple $z_i$ sampled for each x. So we maximize over $\phi$ and then over $\theta$. We can look at this as a two step process,</p>
 $$
-\phi_{i} \leftarrow \phi_{i} + \alpha \nabla_\phi ELBO(x_i, \theta, \phi_i) \\
-\theta \leftarrow \theta + \beta \nabla_\theta \sum_i ELBO(x_i, \theta, \phi_i)
+\phi_{i} \leftarrow \phi_{i} + \alpha \nabla_\phi ELBO(x_i, \theta, \phi_i)  \\
+\theta \leftarrow \theta + \beta \nabla_\theta \sum_i ELBO(x_i, \theta, \phi_i) \tag{17}
 $$<p>The gradients wrt to $\theta$ can be computed easily as the only term that depends on $\theta$ is $p_\theta(x, z_i)$, where $\theta$ is the neural network weights.</p>
 $$
-\nabla_\theta ELBO = \nabla_\theta\left[\mathbb{E}_{q_\phi}\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right]
+\nabla_\theta ELBO = \nabla_\theta\left[\mathbb{E}_{q_\phi}\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right] \tag{18}
 $$<p>The gradient wrt to $\phi$ can be computed as,</p>
 $$
 \begin{aligned}
 \nabla_\phi ELBO &amp; = \nabla_\phi\left[\mathbb{E}_{q_\phi}\log\frac{p_\theta(x, z_i)}{q_\phi(z|x)}\right] \\
 &amp;= \nabla_\phi\left[\int q_\phi(z|x)f_\phi(.)dz\right] \\
-&amp;= \int \nabla_\phi q_\phi(z|x)f_\phi(.) + q_\phi(z|x)\nabla_\phi f_\phi (.)dz \\
+&amp;= \int \nabla_\phi q_\phi(z|x)f_\phi(.) + q_\phi(z|x)\nabla_\phi f_\phi (.)dz \tag{19}\\ 
 \end{aligned}
 $$<p>If we use the <a href="https://math.stackexchange.com/questions/2554749/whats-the-trick-in-log-derivative-trick">log derivative trick</a>  ($\nabla p(x) = p(x)\nabla \log p(x)$), for the first term,</p>
 $$
 \begin{aligned}
 \nabla_\phi ELBO &amp;= \int q_\phi(z|x)f_\phi(.)\nabla_\phi\log q_\phi(z|x) + q_\phi(z|x)\nabla_\phi f_\phi (.)dz \\
 &amp;= \int q_\phi(z|x)\left[f_\phi(.)\nabla_\phi\log q_\phi(z|x) + \nabla_\phi f_\phi (.)\right]dz \\
-&amp;= \mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\nabla_\phi\log q_\phi(z|x) + \nabla_\phi f_\phi (.)\right] \\
+&amp;= \mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\nabla_\phi\log q_\phi(z|x) + \nabla_\phi f_\phi (.)\right] \tag{20} \\
 \end{aligned}
 $$<p>The second term can be removed by</p>
 $$
@@ -311,14 +315,14 @@ $$
 &amp;= -\int q_\phi(z|x) \frac{\nabla_\phi q_\phi(z|x)}{q_\phi(z|x)} dz \\
 &amp;= -\int \nabla_\phi q_\phi(z|x) dz \\
 &amp;= -\nabla_\phi \int q_\phi(z|x) dz = -\nabla_\phi \int q_\phi(z|x) dz = - \nabla_\phi (1)\\
-&amp;= 0
+&amp;= 0 \tag{21}
 \end{aligned}
 $$<p>Replace the above change for the right hand side term,</p>
 $$
-\nabla_\phi ELBO = \mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\nabla_\phi\log q_\phi(z|x)  \right]
+\nabla_\phi ELBO = \mathbb{E}_{q_\phi}\left[\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\nabla_\phi\log q_\phi(z|x)  \right] \tag{22}
 $$<p>The emperical form of ELBO can be written as,</p>
 $$
-\text{Emperical Form : }\nabla_\phi \hat{ELBO} = \frac{1}{k}\sum_{i = 1}^{k}\left[\left(\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\right)\nabla_\phi\log q_\phi(z|x)\right]
+\text{Emperical Form : }\nabla_\phi \hat{ELBO} = \frac{1}{k}\sum_{i = 1}^{k}\left[\left(\log\frac{p_\theta(x, z)}{q_\phi(z|x)}\right)\nabla_\phi\log q_\phi(z|x)\right] \tag{23}
 $$<p>Two conditions would be needed now to to compute this estimate,</p>
 <ol>
 <li>We need to be able to sample $z$</li>
@@ -335,7 +339,7 @@ $$<p>Two conditions would be needed now to to compute this estimate,</p>
 <h4 id="Reparametrization-Trick">
 <a class="anchor" href="#Reparametrization-Trick" aria-hidden="true"><span class="octicon octicon-link"></span></a>Reparametrization Trick<a class="anchor-link" href="#Reparametrization-Trick"> </a>
 </h4>
-<p>This trick was discussed in the paper <a href="https://arxiv.org/abs/1312.6114">Autoencoding Variational Bayes</a>. This proposes an alternative to the expensive sampling process and gives a way that allows for backpropogation through $\phi$. Instead of the neural network directly sampling from the distribution $q_\phi$, instead we sample the distribution statistics itself. Now the sampling process is simplified as follows,</p>
+<p>This trick was discussed in the paper <a href="https://arxiv.org/abs/1312.6114">Autoencoding Variational Baye's</a>. This proposes an alternative to the expensive sampling process and gives a way that allows for backpropogation through $\phi$. Instead of the neural network directly sampling from the distribution $q_\phi$, instead we sample the distribution statistics itself. Now the sampling process is simplified as follows,</p>
 <ol>
 <li>Neural Network $q_\phi$ predicts the mean $\mu$ and standard deviation $\sigma$ of a normal distribution taking input x</li>
 <li>Sample multiple $\epsilon$ from a standard normal, $\mathcal{N}(0, I)$ -&gt; Computationally Inexpensive </li>
@@ -367,10 +371,10 @@ $$<p>Two conditions would be needed now to to compute this estimate,</p>
 <p><strong>3. Loss function (ELBO Term)</strong></p>
 <p>The ELBO objective is maximized to train the model. The objective is as follows,</p>
 $$
-ELBO(\theta, \phi) = \mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi)\: ||\: p(z))
+ELBO(\theta, \phi) = \mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] - D_{KL}(q(z|x; \phi)\: ||\: p(z)) \tag{24}
 $$<p>The first term can be seen as the reconstruction error term (maximizing ELBO will minimize the reconstruction loss),</p>
 $$
-\mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] \sim \frac{1}{m}\sum_j-\left[\frac{x - f(z_j;\phi)}{2\sigma^2}\right]^2
+\mathbb{E}_{z \sim q(z|x)} \left[\log p(x|z;\theta)\right] \sim \frac{1}{m}\sum_j-\left[\frac{x - f(z_j;\phi)}{2\sigma^2}\right]^2 \tag{25}
 $$<p>The second term can be seen as KL to the prior (maximizing ELBO will decrease the distance between variational approximated posterior $q(z|x; \phi)$ and $p(z)$). As both $q(z|x; \phi)$ and $p(z)$ are gaussians, the KL term has a <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions">closed form expression</a>.</p>
 <p>The following image depicts the entire training pipeline of a VAE.</p>
 <figure>
